@@ -1,28 +1,21 @@
+require('dotenv').config();
 const express = require('express');
 const sequelize = require('./config/database');
-const urlLogger = require('./middleware/logger');
-const app = express();
-const PORT = 3000
+const userRoutes = require('./users/userRoutes');
+const taskRoutes = require('./tasks/taskRoutes');
 
-const taskRoutes = require('./routes/taskRoutes');
-const tasks = require('./routes/tasks');
+const app = express();
+const PORT = process.env.PORT || 4000;
 
 app.use(express.json());
+app.use('/api/users', userRoutes);
+app.use('/api/tasks', taskRoutes);
 
-sequelize.sync() // { force: true } to reset table
-  .then(() => console.log('Database synced'))
-  .catch(err => console.error('Error syncing DB', err));
-
-app.use(urlLogger);
-
-app.get('/', (req, res) => {
-    res.send('API is running');
-});
-
-// app.use('/api/tasks', taskRoutes);
-app.use('/api/tasks', tasks);
-
-app.listen(PORT,() =>{
-    console.log(`Server running on http://localhost:${PORT}`);
-});
-    
+sequelize.sync()
+  .then(() => {
+    console.log('Database synced');
+    app.listen(PORT, () => {
+      console.log(`Server listening on http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => console.error('DB sync error:', err));
