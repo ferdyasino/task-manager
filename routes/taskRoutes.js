@@ -6,8 +6,20 @@ const tasks = [];
 router.get('/', (req, res) => res.json(tasks));
 
 router.post('/', (req, res) => {
-    const newTask = { id: tasks.length + 1, ...req.body };
-    tasks.push(newTask); 
+    if ('id' in req.body) {
+        return res.status(400).json({ error: 'Do not provide ID; it is generated automatically.' });
+    }
+
+    const nextId = tasks.length > 0 ? Math.max(...tasks.map(task => task.id)) + 1 : 1;
+    const { title, status } = req.body;
+
+    if (!title || !status) {
+        return res.status(400).json({ error: 'Title and status are required.' });
+    }
+
+    const newTask = { id: nextId, title, status };
+    tasks.push(newTask);
+
     res.status(201).json(newTask);
 });
 
@@ -19,8 +31,10 @@ router.put('/:id',(req, res) => {
         return res.status(404).json({ error: 'Task not found' });
     }
 
-    task.title = req.body.title || task.title;
-    task.status = req.body.status || task.status;
+    const { title, status } = req.body;
+
+    if (title !== undefined) task.title = title;
+    if (status !== undefined) task.status = status;
     res.json(task);
 });
 
