@@ -1,7 +1,6 @@
-const express = require('express');
-const app = express();
-function logger(req, res, next){
-   console.log(`${req.method} ${req.url}`);
-}
+const urlLogger = (req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+};
 
-app.use(logger);
+module.exports = urlLogger;
