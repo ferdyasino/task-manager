@@ -31,6 +31,10 @@ router.put('/:id',(req, res) => {
         return res.status(404).json({ error: 'Task not found' });
     }
 
+    if ('id' in req.body) {
+        return res.status(400).json({ error: 'Cannot update task ID.' });
+    }
+
     const { title, status } = req.body;
 
     if (title !== undefined) task.title = title;
