@@ -10,9 +10,9 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
     const { title, status, dueDate } = req.body;
 
-    if (!title || !status) {
-        return res.status(400).json({ error: 'Title and status are required.' });
-    }
+    // if (!title || !status) {
+    //     return res.status(400).json({ error: 'Title and status are required.' });
+    // }
 
     const newTask = await Task.create({ title, status, dueDate });
     res.status(201).json(newTask);
@@ -28,12 +28,12 @@ router.put('/:id', async (req, res) => {
         return res.status(404).json({ error: 'Task not found' });
     }
 
-    if ('id' in req.body) {
-        return res.status(400).json({ error: 'Cannot update task ID.' });
-    }
+    // if ('id' in req.body) {
+    //     return res.status(400).json({ error: 'Cannot update task ID.' });
+    // }
 
-    if (title !== undefined) task.title = title;
-    if (status !== undefined) task.status = status;
+    // if (title !== undefined) task.title = title;
+    // if (status !== undefined) task.status = status;
 
     await task.save();
     res.json(task);

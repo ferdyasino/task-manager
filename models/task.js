@@ -8,8 +8,7 @@ const Task = sequelize.define('Task',{
     },    
     status: {
         type: DataTypes.STRING,
-        defaultValue: 'pending',
-        allowNull: false
+        defaultValue: 'pending'
     },
     dueDate: {
         type: DataTypes.DATEONLY
