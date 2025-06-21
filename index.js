@@ -1,21 +1,22 @@
 require('dotenv').config();
 const express = require('express');
 const sequelize = require('./config/database');
-const userRoutes = require('./users/userRoutes');
-const taskRoutes = require('./tasks/taskRoutes');
+const apiRoutes = require('./routes/apiRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
 app.use(express.json());
-app.use('/api/users', userRoutes);
-app.use('/api/tasks', taskRoutes);
+app.use('/api', apiRoutes);
 
-sequelize.sync()
+sequelize.authenticate()
   .then(() => {
-    console.log('Database synced');
-    app.listen(PORT, () => {
-      console.log(`Server listening on http://localhost:${PORT}`);
-    });
+    console.log('Database connected successfully.');
+    return sequelize.sync();  // or sequelize.sync({ alter: true }) for dev
   })
-  .catch(err => console.error('DB sync error:', err));
+  .then(() => {
+    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+  })
+  .catch(err => {
+    console.error('DB connection/sync error:', err);
+  });
