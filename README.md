@@ -147,4 +147,4 @@ http://localhost:4000/api
 
 ## 📄 License
 
-MIT © 2025 Your Name
+MIT © 2025 ferdy101
