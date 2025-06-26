@@ -1,18 +1,19 @@
-// models/index.js
-const initSequelize = require('../config/database');
+const { Sequelize } = require('sequelize');
 const defineTaskModel = require('./Task');
 const defineUserModel = require('./User');
 
-let Task, User, sequelize;
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASS,
+  {
+    host: process.env.DB_HOST,
+    dialect: process.env.DB_DIALECT || 'mysql',
+    logging: false,
+  }
+);
 
-async function initModels() {
-  sequelize = await initSequelize(); // ✅ Await the Sequelize instance
+const Task = defineTaskModel(sequelize);
+const User = defineUserModel(sequelize);
 
-  Task = defineTaskModel(sequelize);
-  User = defineUserModel(sequelize);
-
-  await sequelize.sync(); // Optional: { alter: true } in dev
-  return { sequelize, Task, User };
-}
-
-module.exports = initModels;
+module.exports = { sequelize, Task, User };

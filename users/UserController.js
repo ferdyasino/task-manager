@@ -1,78 +1,54 @@
-const { UniqueConstraintError } = require('sequelize');
+const { User } = require('../models');
 const { normalizeRole } = require('../utils/normalize');
+const { UniqueConstraintError } = require('sequelize');
 
-module.exports = (User) => ({
-  // GET all
-  getAllUsers: async (req, res) => {
-    const users = await User.findAll();
-    res.json(users);
-  },
+exports.getAllUsers = async (req, res) => {
+  const users = await User.findAll();
+  res.json(users);
+};
 
-  // CREATE
-  createUser: async (req, res) => {
-    const { name, birthDate, role } = req.body;
-    if (!name || !birthDate) {
-      return res.status(400).json({ error: 'Name & Birthdate required.' });
-    }
+exports.createUser = async (req, res) => {
+  const { name, birthDate, role } = req.body;
+  if (!name || !birthDate) return res.status(400).json({ error: 'Name & Birthdate required.' });
 
-    const existing = await User.findOne({ where: { name } });
-    if (existing) {
-      return res.status(400).json({ error: 'Name already taken.' });
-    }
+  const existing = await User.findOne({ where: { name } });
+  if (existing) return res.status(400).json({ error: 'Name already taken.' });
 
-    const normalizedRole = normalizeRole(role);
-    if (role && !normalizedRole) {
-      return res.status(400).json({ error: "Invalid role. Allowed: 'administrator', 'user'." });
-    }
+  const normalizedRole = normalizeRole(role);
+  if (role && !normalizedRole) return res.status(400).json({ error: "Invalid role." });
 
-    try {
-      const user = await User.create({
-        name,
-        birthDate,
-        role: normalizedRole || 'user'
-      });
-      res.status(201).json({ id: user.id, name: user.name, role: user.role });
-    } catch (err) {
-      if (err instanceof UniqueConstraintError) {
-        return res.status(400).json({ error: 'Name already taken.' });
-      }
-      if (err.name === 'SequelizeValidationError') {
-        return res.status(400).json({ error: err.errors.map(e => e.message) });
-      }
-      throw err;
-    }
-  },
-
-  // UPDATE
-  updateUser: async (req, res) => {
-    const { id } = req.params;
-    const { name, birthDate, role } = req.body;
-
-    const user = await User.findByPk(id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    if (name !== undefined) user.name = name;
-    if (birthDate !== undefined) user.birthDate = birthDate;
-
-    if (role !== undefined) {
-      const normalizedRole = normalizeRole(role);
-      if (!normalizedRole) {
-        return res.status(400).json({ error: "Invalid role. Allowed: 'administrator', 'user'." });
-      }
-      user.role = normalizedRole;
-    }
-
-    await user.save();
-    res.json({ id: user.id, name: user.name, role: user.role });
-  },
-
-  // DELETE
-  deleteUser: async (req, res) => {
-    const { id } = req.params;
-    const user = await User.findByPk(id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    await user.destroy();
-    res.json({ message: 'User deleted', user: { id: user.id, name: user.name, role: user.role } });
+  try {
+    const user = await User.create({ name, birthDate, role: normalizedRole || 'user' });
+    res.status(201).json(user);
+  } catch (err) {
+    if (err instanceof UniqueConstraintError) return res.status(400).json({ error: 'Name must be unique.' });
+    if (err.name === 'SequelizeValidationError') return res.status(400).json({ error: err.errors.map(e => e.message) });
+    throw err;
   }
-});
+};
+
+exports.updateUser = async (req, res) => {
+  const user = await User.findByPk(req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  const { name, birthDate, role } = req.body;
+
+  if (name) user.name = name;
+  if (birthDate) user.birthDate = birthDate;
+  if (role) {
+    const normalized = normalizeRole(role);
+    if (!normalized) return res.status(400).json({ error: 'Invalid role.' });
+    user.role = normalized;
+  }
+
+  await user.save();
+  res.json(user);
+};
+
+exports.deleteUser = async (req, res) => {
+  const user = await User.findByPk(req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  await user.destroy();
+  res.json({ message: 'User deleted', user });
+};

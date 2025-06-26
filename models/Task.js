@@ -31,12 +31,14 @@ module.exports = (sequelize) => {
             const inputDate = new Date(value);
             inputDate.setHours(0, 0, 0, 0);
 
-            if (inputDate < today) {
+            if (inputDate.getTime() < today.getTime()) {
               throw new Error('Due date cannot be in the past.');
             }
           }
         }
       }
     }
+  }, {
+    timestamps: true // Optional: adds createdAt and updatedAt
   });
 };

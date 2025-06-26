@@ -1,2 +1,57 @@
-/node_modules
-.env 
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# dotenv environment files
+.env
+.env.*.local
+
+# Build output
+dist/
+build/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS-specific
+*.swp
+*~
+.nfs*
+
+# Coverage and reports
+coverage/
+.nyc_output/
+lcov-report/
+
+# Database (optional: ignore if using SQLite or exporting dumps)
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.sql
+
+# Misc
+debug.log
+temp/
+tmp/
+.cache/
