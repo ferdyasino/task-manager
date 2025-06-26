@@ -1,5 +1,5 @@
 const normalizeStatus = (input) => {
-  if (!input) return undefined;
+  if (!input || typeof input !== 'string') return undefined;
 
   const statusMap = {
     'pending': 'pending',
@@ -16,7 +16,7 @@ const normalizeStatus = (input) => {
 };
 
 const normalizeRole = (input) => {
-  if (!input) return undefined;
+  if (!input || typeof input !== 'string') return undefined;
 
   const roleMap = {
     'admin': 'administrator',
@@ -31,5 +31,5 @@ const normalizeRole = (input) => {
 
 module.exports = {
   normalizeStatus,
-  normalizeRole
+  normalizeRole,
 };

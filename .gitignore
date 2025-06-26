@@ -55,3 +55,6 @@ debug.log
 temp/
 tmp/
 .cache/
+
+#on-going
+/task_app

@@ -1,7 +1,10 @@
 require('dotenv').config();
 const express = require('express');
-const { sequelize } = require('./models');
+const sequelize = require('./config/database');
+
 const apiRoutes = require('./routes/apiRoutes');
+require('./tasks/TaskModel'); // initialize model
+require('./users/UserModel'); // initialize model
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -17,9 +20,9 @@ const PORT = process.env.PORT || 4000;
     app.use(express.json());
     app.use('/api', apiRoutes);
 
-    app.listen(PORT, () =>
-      console.log(`🚀 Server running at http://localhost:${PORT}`)
-    );
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running at http://localhost:${PORT}`);
+    });
   } catch (err) {
     console.error('❌ App initialization failed:', err);
     process.exit(1);
