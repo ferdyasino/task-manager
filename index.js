@@ -29,7 +29,7 @@ function getLocalIP() {
     await sequelize.authenticate();
     console.log('✅ Database authenticated');
 
-    await sequelize.sync({ alter: true }); // Use `alter` only in development!
+    await sequelize.sync({ force: true }); // Use `alter` only in development!
     console.log('✅ Models synced');
 
     const ip = getLocalIP();

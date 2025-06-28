@@ -1,6 +1,6 @@
 # 📝 Task Manager App
 
-A simple RESTful API for managing tasks and users, built with **Node.js**, **Express**, **Sequelize**, and **MySQL**.
+A simple RESTful API for managing tasks and users, built with **Node.js**, **Express**, **Sequelize**, **MySQL**, and paired with a Flutter frontend.
 
 ---
 
@@ -9,35 +9,45 @@ A simple RESTful API for managing tasks and users, built with **Node.js**, **Exp
 ```
 .
 ├── config/           # Sequelize DB config
-├── models/           # Sequelize models (User, Task)
-├── routes/           # Express route handlers
-├── tasks/            # Task controller and route
-├── users/            # User controller and route
-├── utils/            # Utility functions (e.g., role/status normalization)
-├── index.js          # App entry point
+├── tasks/            # Task model, controller, and route
+├── users/            # User model, controller, and route
+├── routes/           # Combined API routes
+├── utils/            # Utility functions (e.g., normalization)
+├── task_app/         # Flutter frontend app (modularized)
+│   ├── android/ios/web/linux/windows/macos/ # Platform folders
+│   ├── lib/          # Flutter Dart source files
+│   ├── assets/       # App icons and splash assets
+│   ├── pubspec.yaml  # Flutter dependencies
 ├── .env              # Environment variables (not committed)
-├── .gitignore        # Git ignore file
-├── package.json      # NPM metadata and scripts
+├── index.js          # Express app entry point
+├── package.json      # NPM scripts and metadata
+├── README.md         # Project overview and docs
 ```
 
 ---
 
 ## ⚙️ Features
 
-- ✅ Create, read, update, delete (CRUD) for both users and tasks.
-- 🛡 Validations for fields like title uniqueness, allowed roles and statuses.
-- 📅 Prevent past due dates.
-- 📦 Clean modular folder structure.
+- ✅ Full CRUD for tasks and users
+- 🛡 Field validation (e.g. unique task titles, allowed roles)
+- ⏳ Prevent past due dates and future birthdates
+- 📲 Flutter frontend with splash screen and launcher icons
+- 🔌 API-first backend with modular separation
 
 ---
 
 ## 🧱 Technologies
 
-- [Node.js](https://nodejs.org/)
-- [Express](https://expressjs.com/)
-- [Sequelize](https://sequelize.org/)
-- [MySQL](https://www.mysql.com/)
-- [dotenv](https://github.com/motdotla/dotenv)
+- **Backend**:
+  - [Node.js](https://nodejs.org/)
+  - [Express](https://expressjs.com/)
+  - [Sequelize](https://sequelize.org/)
+  - [MySQL](https://www.mysql.com/)
+- **Frontend**:
+  - [Flutter](https://flutter.dev/)
+  - [Dart](https://dart.dev/)
+  - [flutter_launcher_icons](https://pub.dev/packages/flutter_launcher_icons)
+  - [flutter_native_splash](https://pub.dev/packages/flutter_native_splash)
 
 ---
 
@@ -50,18 +60,18 @@ git clone https://github.com/YOUR_USERNAME/task-manager-app.git
 cd task-manager-app
 ```
 
-### 2. Install dependencies
+### 2. Install backend dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure environment variables
+### 3. Setup environment variables
 
 Create a `.env` file:
 
 ```env
-# Remote DB (e.g., PlanetScale, Railway, etc.)
+# Remote DB (optional)
 DB_HOST=your-db-host
 DB_PORT=3306
 DB_NAME=your-db-name
@@ -69,27 +79,36 @@ DB_USER=your-username
 DB_PASS=your-password
 DB_DIALECT=mysql
 
-# Local fallback (used if remote is unreachable)
+# Local fallback
 LOCAL_DB_HOST=localhost
 LOCAL_DB_NAME=task_manager
 LOCAL_DB_USER=root
 LOCAL_DB_PASS=
 ```
 
-### 4. Run the app
+### 4. Setup Flutter frontend
 
 ```bash
-# For development
-npm run dev
-
-# Or basic
-node index.js
+cd task_app
+flutter pub get
+flutter pub run flutter_launcher_icons
+flutter pub run flutter_native_splash:create
 ```
 
-The API should now be running at:
+### 5. Run the project
+
+```bash
+# From project root
+./dev.sh
+# or run separately:
+npm run dev        # backend
+cd task_app && flutter run  # frontend
+```
+
+The API should be running at:
 
 ```
-http://localhost:4000/api
+http://localhost:3000/api
 ```
 
 ---
@@ -132,16 +151,17 @@ http://localhost:4000/api
 
 ## 📌 Notes
 
-- Controllers are modular and rely on model imports (`require('../models')`).
-- Sequelize is initialized once and injected globally via `models/index.js`.
+- Uses modular structure: `tasks/`, `users/`, etc.
+- Sequelize is initialized via `config/database.js`
+- Flutter icons and splash screens are generated via pub commands
 
 ---
 
 ## 🧹 To Do
 
-- [ ] Add authentication (e.g., JWT)
-- [ ] Add pagination
-- [ ] Deploy to production (Render, Vercel, etc.)
+- [ ] Add JWT authentication
+- [ ] Add pagination support
+- [ ] Deployment (Render, Vercel, etc.)
 
 ---
 

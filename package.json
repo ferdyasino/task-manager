@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "icons": "dart pub run flutter_launcher_icons:main",
+    "splash": "dart pub run flutter_native_splash:create",
+    "flutter-run": "cd task_app; flutter run",
+    "flutter-dev": "concurrently \"npm run dev\" \"npm run icons\" \"npm run splash\" \"npm run flutter-run\""
   },
   "author": "",
   "license": "ISC",
@@ -17,6 +19,7 @@
     "sequelize": "^6.37.7"
   },
   "devDependencies": {
+    "concurrently": "^9.2.0",
     "nodemon": "^3.1.10"
   }
 }
