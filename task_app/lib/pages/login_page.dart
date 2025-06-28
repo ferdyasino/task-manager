@@ -26,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
       _error = null;
     });
 
-    final uri = Uri.parse('http://192.168.1.116:3000/api/auth/login');
+    final uri = Uri.parse('http://192.168.1.116:4000/api/auth/login');
     final response = await http.post(
       uri,
       headers: {'Content-Type': 'application/json'},

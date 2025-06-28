@@ -1,16 +1,20 @@
+// tasks/TaskModel.js
+// console.log('🔍 TaskModel loaded');
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+const { getSequelizeInstance } = require('../config/sequelizeInstance');
+
+const sequelize = getSequelizeInstance();
 
 const Task = sequelize.define('Task', {
   title: {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
-    validate: { notEmpty: true }
+    validate: { notEmpty: true },
   },
   description: {
-    type: DataTypes.TEXT, // 🆕 added description support
-    allowNull: true
+    type: DataTypes.TEXT,
+    allowNull: true,
   },
   status: {
     type: DataTypes.STRING,
@@ -19,17 +23,17 @@ const Task = sequelize.define('Task', {
     validate: {
       isIn: {
         args: [['pending', 'in-progress', 'done']],
-        msg: "Status must be 'pending', 'in-progress' or 'done'"
-      }
-    }
+        msg: "Status must be 'pending', 'in-progress' or 'done'",
+      },
+    },
   },
   dueDate: {
     type: DataTypes.DATE,
     allowNull: true,
     validate: {
-      isDate: true
-    }
-  }
+      isDate: true,
+    },
+  },
 });
 
 module.exports = Task;
