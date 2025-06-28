@@ -3,6 +3,10 @@ import 'tasks_page.dart';
 import 'users_page.dart';
 
 class HomeScreen extends StatefulWidget {
+  final String token;
+
+  const HomeScreen({Key? key, required this.token}) : super(key: key);
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -11,16 +15,19 @@ class _HomeScreenState extends State<HomeScreen> {
   String currentPage = 'Tasks';
 
   void navigateTo(String page) {
-    setState(() => currentPage = page);
-    Navigator.pop(context); // Close drawer
+    setState(() {
+      currentPage = page;
+    });
+    Navigator.pop(context); // Close the drawer
   }
 
   Widget _getPage() {
     switch (currentPage) {
       case 'Users':
-        return UsersPage();
+        return UsersPage(); // ✅ Make sure UsersPage has const constructor if possible
+      case 'Tasks':
       default:
-        return TasksPage();
+        return TasksPage(token: widget.token); // ✅ Passing token to TasksPage
     }
   }
 
@@ -29,11 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(currentPage)),
       endDrawer: Drawer(
-        // 👈 This already slides from the right
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
+            const DrawerHeader(
               decoration: BoxDecoration(color: Colors.blue),
               child: Center(
                 child: Text(
@@ -43,13 +49,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             ListTile(
-              leading: Icon(Icons.task),
-              title: Text('Tasks'),
+              leading: const Icon(Icons.task),
+              title: const Text('Tasks'),
               onTap: () => navigateTo('Tasks'),
             ),
             ListTile(
-              leading: Icon(Icons.people),
-              title: Text('Users'),
+              leading: const Icon(Icons.people),
+              title: const Text('Users'),
               onTap: () => navigateTo('Users'),
             ),
           ],

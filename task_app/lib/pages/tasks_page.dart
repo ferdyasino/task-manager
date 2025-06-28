@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class TasksPage extends StatefulWidget {
+  final String token;
+
+  const TasksPage({Key? key, required this.token}) : super(key: key);
+
   @override
   State<TasksPage> createState() => _TasksPageState();
 }

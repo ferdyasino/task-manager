@@ -17,6 +17,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
 
 flutter:
   uses-material-design: true
@@ -24,8 +25,15 @@ flutter:
     - assets/icon/
     - assets/splash/
 
-# Must be outside `flutter`
-flutter_icons:
+# 🚀 Launcher Icon Config (outside `flutter`)
+flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/icon.png"
+
+# 💧 Splash Screen Config (outside `flutter`)
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/icon/icon.png
+  android: true
+  ios: true
