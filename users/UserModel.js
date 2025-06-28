@@ -1,4 +1,3 @@
-// users/UserModel.js
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcrypt');
 const { getSequelizeInstance } = require('../config/sequelizeInstance');
@@ -66,9 +65,9 @@ const User = sequelize.define(
   }
 );
 
-// Method to validate password
+// Instance method for password validation
 User.prototype.isValidPassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
 
-module.exports = User;
+module.exports = { User }; // ✅ NAMED EXPORT for consistency

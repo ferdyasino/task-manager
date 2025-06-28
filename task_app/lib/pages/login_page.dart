@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:task_app/pages/registration_page.dart';
 
 class LoginPage extends StatefulWidget {
   final void Function(String token) onLoginSuccess;
@@ -49,6 +50,13 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _goToRegister() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RegisterPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             children: [
               if (_error != null)
-                Text(_error!, style: TextStyle(color: Colors.red)),
+                Text(_error!, style: const TextStyle(color: Colors.red)),
               TextFormField(
                 controller: _usernameController,
                 decoration: const InputDecoration(labelText: 'Username'),
@@ -80,6 +88,11 @@ class _LoginPageState extends State<LoginPage> {
                 child: _isLoading
                     ? const CircularProgressIndicator()
                     : const Text('Login'),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: _goToRegister,
+                child: const Text("Don't have an account? Register"),
               ),
             ],
           ),

@@ -1,17 +1,20 @@
-const User = require('./UserModel');
+const { User } = require('./UserModel'); // ✅ FIXED: use named import
 const { normalizeRole } = require('../utils/normalize');
 
-// GET all users
+// ✅ GET all users (exclude password)
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.findAll({ attributes: { exclude: ['password'] } });
+    const users = await User.findAll({
+      attributes: { exclude: ['password'] }
+    });
     res.json(users);
   } catch (err) {
+    console.error('❌ Error fetching users:', err); // ✅ better debug info
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 };
 
-// POST create user
+// ✅ POST create user
 exports.createUser = async (req, res) => {
   try {
     const { name, birthDate, role, password } = req.body;
@@ -30,11 +33,12 @@ exports.createUser = async (req, res) => {
       const errors = err.errors.map(e => e.message);
       return res.status(400).json({ errors });
     }
+    console.error('❌ Error creating user:', err);
     res.status(500).json({ error: 'Failed to create user' });
   }
 };
 
-// PUT update user
+// ✅ PUT update user
 exports.updateUser = async (req, res) => {
   try {
     const { name, birthDate, role, password } = req.body;
@@ -56,11 +60,12 @@ exports.updateUser = async (req, res) => {
       const errors = err.errors.map(e => e.message);
       return res.status(400).json({ errors });
     }
+    console.error('❌ Error updating user:', err);
     res.status(500).json({ error: 'Failed to update user' });
   }
 };
 
-// DELETE user
+// ✅ DELETE user
 exports.deleteUser = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
@@ -69,6 +74,7 @@ exports.deleteUser = async (req, res) => {
     await user.destroy();
     res.json({ message: 'User deleted' });
   } catch (err) {
+    console.error('❌ Error deleting user:', err);
     res.status(500).json({ error: 'Failed to delete user' });
   }
 };
