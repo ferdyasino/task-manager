@@ -8,6 +8,10 @@ const Task = sequelize.define('Task', {
     unique: true,
     validate: { notEmpty: true }
   },
+  description: {
+    type: DataTypes.TEXT, // 🆕 added description support
+    allowNull: true
+  },
   status: {
     type: DataTypes.STRING,
     allowNull: false,
