@@ -1,8 +1,6 @@
 // tasks/TaskModel.js
-// console.log('🔍 TaskModel loaded');
 const { DataTypes } = require('sequelize');
 const { getSequelizeInstance } = require('../config/sequelizeInstance');
-
 const sequelize = getSequelizeInstance();
 
 const Task = sequelize.define('Task', {
@@ -34,6 +32,14 @@ const Task = sequelize.define('Task', {
       isDate: true,
     },
   },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
 });
+
+// ✅ Associate with User
+const { User } = require('../users/UserModel');
+Task.belongsTo(User, { foreignKey: 'userId' });
 
 module.exports = Task;

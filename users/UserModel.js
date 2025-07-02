@@ -10,7 +10,7 @@ const User = sequelize.define(
     name: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
+      // unique: true,
       validate: {
         notEmpty: { msg: 'Name is required' },
       },
@@ -36,6 +36,14 @@ const User = sequelize.define(
           msg: 'Role must be either "user" or "administrator"',
         },
       },
+    },
+    email: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false,
+      validate:{
+        notEmpty: { msg: 'Email is required' }
+      }
     },
     password: {
       type: DataTypes.STRING,

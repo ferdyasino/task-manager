@@ -2,82 +2,104 @@ const { User } = require('../users/UserModel');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-// ✅ REGISTER CONTROLLER
+const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
+
+// ✅ Register Controller
 exports.register = async (req, res) => {
+  const { name, birthDate, email, password, role } = req.body;
+
   try {
-    const { name, password, birthDate, role } = req.body;
-
-    if (!name || !password || !birthDate) {
-      return res.status(400).json({ error: 'Name, password, and birthDate are required' });
+    // Check if email already exists
+    const exists = await User.findOne({ where: { email } });
+    if (exists) {
+      return res.status(400).json({ error: 'Email already registered' });
     }
 
-    const existingUser = await User.findOne({ where: { name } });
-    if (existingUser) {
-      return res.status(409).json({ error: 'Name already registered' });
-    }
+    // Hash password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await User.create({
-      name,
-      birthDate,
-      password, // ✅ Let model hash it
-      role: role || 'user',
+    // Create new user
+    const user = await User.create({ 
+      name, 
+      birthDate, 
+      email, 
+      password: hashedPassword, 
+      role 
     });
 
-    const payload = {
-      id: newUser.id,
-      name: newUser.name,
-      role: newUser.role,
-    };
-
-    const token = jwt.sign(payload, process.env.JWT_SECRET || 'dev_secret', {
-      expiresIn: '2h',
+    // Create token
+    const token = jwt.sign({ id: user.id, name: user.name }, JWT_SECRET, {
+      expiresIn: '1h',
     });
 
-    return res.status(201).json({
-      message: 'Registered successfully',
-      user: payload,
+    // Set cookie (optional for UI)
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Secure cookie in production
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
+    // Respond with token and user info
+    res.status(201).json({
+      message: 'User registered',
       token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
-  } catch (error) {
-    console.error('❌ Registration error:', error);
-    return res.status(500).json({ error: 'Registration failed' });
+  } catch (err) {
+    console.error('Register Error:', err);
+    res.status(500).json({ error: 'Server error during registration' });
   }
 };
 
-
-
-// ✅ LOGIN CONTROLLER
+// ✅ Login Controller
 exports.login = async (req, res) => {
+  const { email, password } = req.body;
+
   try {
-    const { name, password } = req.body;
-
-    const user = await User.findOne({ where: { name } });
+    // Find user
+    const user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(400).json({ error: 'User with this email does not exist' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    // Check password
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return res.status(400).json({ error: 'Incorrect password' });
     }
 
-    const payload = {
-      id: user.id,
-      name: user.name,
-      role: user.role,
-    };
-
-    const token = jwt.sign(payload, process.env.JWT_SECRET || 'dev_secret', {
-      expiresIn: '2h',
+    // Generate token
+    const token = jwt.sign({ id: user.id, name: user.name }, JWT_SECRET, {
+      expiresIn: '1h',
     });
 
-    return res.json({
+    // Set cookie for browser
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
+    // Respond with token and user info
+    res.status(200).json({
       message: 'Login successful',
-      user: payload,
-      token,
+      token, // You can choose to send the token in the response body as well
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
-  } catch (error) {
-    console.error('❌ Login error:', error);
-    return res.status(500).json({ error: 'Login failed' });
+  } catch (err) {
+    console.error('Login Error:', err);
+    res.status(500).json({ error: 'Server error during login' });
   }
 };

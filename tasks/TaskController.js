@@ -2,10 +2,13 @@ const { UniqueConstraintError, ValidationError } = require('sequelize');
 const Task = require('./TaskModel');
 const { normalizeStatus } = require('../utils/normalize');
 
-// GET all tasks
+// ✅ GET all tasks for the authenticated user
 exports.getAllTasks = async (req, res) => {
   try {
-    const tasks = await Task.findAll();
+    const tasks = await Task.findAll({
+      where: { userId: req.user.id },
+      order: [['createdAt', 'DESC']],
+    });
     res.json(tasks);
   } catch (err) {
     console.error('❌ Fetch error:', err);
@@ -13,7 +16,7 @@ exports.getAllTasks = async (req, res) => {
   }
 };
 
-// POST create a new task
+// ✅ POST create a new task for the user
 exports.createTask = async (req, res) => {
   try {
     const { title, description, status, dueDate } = req.body;
@@ -28,6 +31,7 @@ exports.createTask = async (req, res) => {
       description,
       status: normalizedStatus,
       dueDate,
+      userId: req.user.id, // ✅ associate with logged-in user
     });
 
     res.status(201).json(task);
@@ -44,7 +48,7 @@ exports.createTask = async (req, res) => {
   }
 };
 
-// PUT update task
+// ✅ PUT update a task — only if it belongs to the user
 exports.updateTask = async (req, res) => {
   try {
     const { description, status, dueDate } = req.body;
@@ -53,6 +57,10 @@ exports.updateTask = async (req, res) => {
 
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
+    }
+
+    if (task.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden' });
     }
 
     await task.update({
@@ -72,13 +80,17 @@ exports.updateTask = async (req, res) => {
   }
 };
 
-// DELETE task
+// ✅ DELETE task — only if it belongs to the user
 exports.deleteTask = async (req, res) => {
   try {
     const task = await Task.findByPk(req.params.id);
 
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
+    }
+
+    if (task.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden' });
     }
 
     await task.destroy();

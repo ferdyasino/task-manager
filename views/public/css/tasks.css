@@ -1,0 +1,117 @@
+body {
+  font-family: sans-serif;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+h2 {
+  margin: 0;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.actions {
+  margin-bottom: 1rem;
+}
+
+button {
+  padding: 0.5rem 1.2rem;
+  margin-right: 0.5rem;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.task-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  display: none; /* shown only when data is present */
+}
+
+.task-table th,
+.task-table td {
+  border: 1px solid #ccc;
+  padding: 0.75rem;
+  text-align: left;
+  background-color: #fff;
+}
+
+.task-table th {
+  background-color: #f0f0f0;
+  font-weight: bold;
+}
+
+#no-tasks-msg {
+  font-style: italic;
+  margin-top: 1rem;
+  display: none; /* shown only when there are no tasks */
+}
+
+#error-msg {
+  color: red;
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+/* Modal Styles */
+.modal {
+  display: none; /* shown when active via JS */
+  position: fixed;
+  z-index: 10;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background-color: #fff;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 5px;
+  width: 300px;
+  max-width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+form {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+form input,
+form textarea {
+  width: 100%;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+}
