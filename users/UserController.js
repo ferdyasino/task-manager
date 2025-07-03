@@ -1,7 +1,7 @@
 const { User } = require('./User'); // ✅ FIXED: use named import
 const { normalizeRole } = require('../utils/normalize');
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'mysecret';
+const JWT_SECRET = process.env.JWT_SECRET;
 const bcrypt = require('bcrypt');
 
 // ✅ GET all users (exclude password)

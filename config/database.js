@@ -28,7 +28,7 @@ module.exports = async () => {
   };
 
   const localConfig = {
-    host: process.env.LOCAL_DB_HOST || '127.0.0.1',
+    host: process.env.LOCAL_DB_HOST || 'localhost',
     port: process.env.LOCAL_DB_PORT || 3306,
     database: process.env.LOCAL_DB_NAME,
     username: process.env.LOCAL_DB_USER,
