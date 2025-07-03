@@ -10,7 +10,6 @@ const User = sequelize.define(
     name: {
       type: DataTypes.STRING,
       allowNull: false,
-      // unique: true,
       validate: {
         notEmpty: { msg: 'Name is required' },
       },
@@ -39,11 +38,15 @@ const User = sequelize.define(
     },
     email: {
       type: DataTypes.STRING,
-      unique: true,
+      unique: {
+        args: true,
+        msg: 'Email address is already in use.',
+      },
       allowNull: false,
-      validate:{
-        notEmpty: { msg: 'Email is required' }
-      }
+      validate: {
+        notEmpty: { msg: 'Email is required' },
+        isEmail: { msg: 'Must be a valid email address' }, // Added email format validation
+      },
     },
     password: {
       type: DataTypes.STRING,
@@ -78,4 +81,4 @@ User.prototype.isValidPassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
 
-module.exports = { User }; // ✅ NAMED EXPORT for consistency
+module.exports = { User };

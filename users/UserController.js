@@ -1,5 +1,8 @@
-const { User } = require('./UserModel'); // ✅ FIXED: use named import
+const { User } = require('./User'); // ✅ FIXED: use named import
 const { normalizeRole } = require('../utils/normalize');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'mysecret';
+const bcrypt = require('bcrypt');
 
 // ✅ GET all users (exclude password)
 exports.getAllUsers = async (req, res) => {
@@ -35,6 +38,79 @@ exports.createUser = async (req, res) => {
     }
     console.error('❌ Error creating user:', err);
     res.status(500).json({ error: 'Failed to create user' });
+  }
+};
+
+// ✅ POST register route with password hashing
+exports.register = async (req, res) => {
+  try {
+    const { name, email, password, birthDate, role } = req.body;
+
+    // Check if email is already registered
+    const exists = await User.findOne({ where: { email } });
+    if (exists) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Create user
+    const user = await User.create({
+      name,
+      email,
+      password,  // Password will be hashed in the model's beforeCreate hook
+      birthDate,
+      role: normalizeRole(role),
+    });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id },  
+      JWT_SECRET,               
+      { expiresIn: '1h' }      
+    );
+
+   return res.status(201).json({
+      message: 'User registered successfully',
+      userId: user.id,
+      token,           
+    });
+  } catch (error) {
+    console.error('❌ Error registering user:', error);
+    res.status(500).json({ error: 'Failed to register user' });
+  }
+};
+
+// ✅ POST login route (fixed: only email and password needed)
+exports. login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
+    console.log(user);
+
+    // Compare password with hashed password in DB
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(400).json({ error: 'Invalid email or password' });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id },  
+      JWT_SECRET,               
+      { expiresIn: '1h' }      
+    );
+
+    res.json({ 
+      message: 'Login successful', 
+      token,                  // Include token in response
+      userId: user.id         // Optionally include user info
+    });
+  } catch (error) {
+    console.error('❌ Error during login:', error);
+    res.status(500).json({ error: 'Failed to login user' });
   }
 };
 

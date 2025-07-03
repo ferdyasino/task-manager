@@ -38,8 +38,8 @@ const Task = sequelize.define('Task', {
   },
 });
 
-// ✅ Associate with User
-const { User } = require('../users/UserModel');
+// ✅ Associate with User 
+const { User } = require('../users/User');
 Task.belongsTo(User, { foreignKey: 'userId' });
 
 module.exports = Task;
