@@ -32,7 +32,7 @@ module.exports = async () => {
     port: process.env.LOCAL_DB_PORT || 3306,
     database: process.env.LOCAL_DB_NAME,
     username: process.env.LOCAL_DB_USER,
-    password: process.env.LOCAL_DB_PASS,
+    password: process.env.LOCAL_DB_PASS,  
     dialect: process.env.LOCAL_DB_DIALECT || 'mysql',
   };
 
