@@ -4,14 +4,14 @@ const { normalizeStatus } = require('../utils/normalize');
 
 exports.getAllTasks = async (req, res) => {
   try {
-    if (!req.user || !req.user.id) {
+    if (!req.user || !req.user.userId) {
       return res.status(401).json({ error: 'Unauthorized: Missing user info' });
     }
 
-    console.log('Fetching tasks for user:', req.user.id);
+    console.log('Fetching tasks for user:', req.user.userId);
 
     const tasks = await Task.findAll({
-      where: { userId: req.user.id },
+      where: { userId: req.user.userId },
       order: [['createdAt', 'DESC']]
     });
 

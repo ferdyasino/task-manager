@@ -1,4 +1,3 @@
-// tasks/TaskModel.js
 const { DataTypes } = require('sequelize');
 const { getSequelizeInstance } = require('../config/sequelizeInstance');
 const sequelize = getSequelizeInstance();
@@ -38,7 +37,6 @@ const Task = sequelize.define('Task', {
   },
 });
 
-// ✅ Associate with User 
 const { User } = require('../users/User');
 Task.belongsTo(User, { foreignKey: 'userId' });
 
