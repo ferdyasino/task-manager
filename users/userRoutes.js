@@ -3,11 +3,14 @@ const router = express.Router();
 const controller = require('./UserController');
 const authGuard = require('../middlewares/authGuard');
 
-router.post('/register', controller.register);
+// Public routes
 router.post('/login', controller.login);
+router.post('/register', controller.register);
+router.post('/forgot-password', controller.forgotPassword);
+router.post('/reset-password/:token', controller.resetPassword);
 
+// Protected routes
 router.use(authGuard);
-
 router.get('/', controller.getAllUsers);
 router.post('/', controller.createUser);
 router.put('/:id', controller.updateUser);

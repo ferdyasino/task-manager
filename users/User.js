@@ -45,7 +45,7 @@ const User = sequelize.define(
       allowNull: false,
       validate: {
         notEmpty: { msg: 'Email is required' },
-        isEmail: { msg: 'Must be a valid email address' }, // Added email format validation
+        isEmail: { msg: 'Must be a valid email address' },
       },
     },
     password: {
@@ -58,6 +58,16 @@ const User = sequelize.define(
           msg: 'Password must be at least 6 characters long',
         },
       },
+    },
+
+
+    resetToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    resetTokenExpiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
   },
   {
@@ -76,7 +86,7 @@ const User = sequelize.define(
   }
 );
 
-// Instance method for password validation
+
 User.prototype.isValidPassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };

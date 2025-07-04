@@ -2,47 +2,32 @@ const { UniqueConstraintError, ValidationError } = require('sequelize');
 const Task = require('./Task');
 const { normalizeStatus } = require('../utils/normalize');
 
-// ✅ GET all tasks for the authenticated user (with pagination)
 exports.getAllTasks = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Unauthorized: Missing user info' });
+    }
 
-    console.log('Fetching tasks for user:', req.user.id);  // Debugging log
+    console.log('Fetching tasks for user:', req.user.id);
 
-    // Fetch tasks with pagination, using the correct userId field
     const tasks = await Task.findAll({
-      where: { userId: req.user.id },  // Use userId instead of id
-      order: [['createdAt', 'DESC']],  // Order by creation date
-      limit: parseInt(limit),
-      offset: (page - 1) * limit
+      where: { userId: req.user.id },
+      order: [['createdAt', 'DESC']]
     });
 
     if (tasks.length === 0) {
       return res.status(404).json({ message: 'No tasks found for this user' });
     }
 
-    // Get total task count for pagination info
-    const totalTasks = await Task.count({
-      where: { userId: req.user.id }  // Use userId instead of id
-    });
-
-    const totalPages = Math.ceil(totalTasks / limit);
-
-    res.json({
-      tasks,
-      totalTasks,
-      totalPages,
-      currentPage: page,
-      perPage: limit
-    });
+    res.json(tasks);
   } catch (err) {
-    console.error('❌ Error fetching tasks:', err);
+    console.error('Error fetching tasks:', err);
     res.status(500).json({ error: 'Failed to fetch tasks' });
   }
 };
 
 
-// ✅ POST create a new task for the user
+
 exports.createTask = async (req, res) => {
   try {
     const { title, description, status, dueDate } = req.body;
@@ -54,18 +39,16 @@ exports.createTask = async (req, res) => {
     const normalizedStatus = normalizeStatus(status);
     const normalizedDescription = description ? description.trim() : '';
 
-    // Validate dueDate
     if (!dueDate || isNaN(new Date(dueDate))) {
       return res.status(400).json({ error: 'Valid due date is required' });
     }
 
-    // Create task
     const task = await Task.create({
       title: title.trim(),
       description: normalizedDescription,
       status: normalizedStatus,
       dueDate,
-      userId: req.user.id, // associate with logged-in user
+      userId: req.user.id, 
     });
 
     res.status(201).json({ message: 'Task created successfully', task });
@@ -77,12 +60,11 @@ exports.createTask = async (req, res) => {
       return res.status(400).json({ error: err.errors[0].message });
     }
 
-    console.error('❌ Error creating task:', err);
+    console.error('Error creating task:', err);
     res.status(400).json({ error: 'Failed to create task' });
   }
 };
 
-// ✅ PUT update a task — only if it belongs to the user
 exports.updateTask = async (req, res) => {
   try {
     const { description, status, dueDate } = req.body;
@@ -116,12 +98,11 @@ exports.updateTask = async (req, res) => {
       return res.status(400).json({ error: err.errors[0].message });
     }
 
-    console.error('❌ Error updating task:', err);
+    console.error('Error updating task:', err);
     res.status(500).json({ error: 'Failed to update task' });
   }
 };
 
-// ✅ DELETE task — only if it belongs to the user
 exports.deleteTask = async (req, res) => {
   try {
     const task = await Task.findByPk(req.params.id);
@@ -137,7 +118,7 @@ exports.deleteTask = async (req, res) => {
     await task.destroy();
     res.json({ message: 'Task deleted successfully' });
   } catch (err) {
-    console.error('❌ Error deleting task:', err);
+    console.error('Error deleting task:', err);
     res.status(500).json({ error: 'Failed to delete task' });
   }
 };
