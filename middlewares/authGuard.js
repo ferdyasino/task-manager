@@ -4,8 +4,9 @@ const JWT_SECRET = process.env.JWT_SECRET;
 module.exports = function authGuard(req, res, next) {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No token provided. Please log in first.' });
+  if (!authHeader?.startsWith('Bearer ')) {
+    console.warn('Missing or malformed Authorization header.');
+    return res.status(401).json({ error: 'No token provided. Please log in.' });
   }
 
   const token = authHeader.split(' ')[1];
@@ -15,11 +16,11 @@ module.exports = function authGuard(req, res, next) {
 
     req.user = { userId: decoded.userId };
 
-    console.log('✅ Decoded user from token:', req.user);
+    console.log('✅ Authenticated user ID:', req.user.userId);
 
     next();
   } catch (err) {
-    console.error('Invalid token:', err.message);
+    console.error('Token verification failed:', err.message);
     return res.status(401).json({ error: 'Invalid or expired token. Please log in again.' });
   }
 };
