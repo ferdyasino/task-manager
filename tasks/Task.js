@@ -1,8 +1,14 @@
 const { DataTypes } = require('sequelize');
 const { getSequelizeInstance } = require('../config/sequelizeInstance');
 const sequelize = getSequelizeInstance();
+const { User } = require('../users/User');
 
 const Task = sequelize.define('Task', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
   title: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -34,10 +40,15 @@ const Task = sequelize.define('Task', {
   userId: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id',
+    },
+    onDelete: 'CASCADE',
   },
 });
 
-const { User } = require('../users/User');
 Task.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(Task, { foreignKey: 'userId' });
 
 module.exports = Task;

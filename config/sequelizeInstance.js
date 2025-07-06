@@ -1,4 +1,3 @@
-// config/sequelizeInstance.js
 let sequelize = null;
 
 function setSequelizeInstance(instance) {
@@ -7,7 +6,7 @@ function setSequelizeInstance(instance) {
 
 function getSequelizeInstance() {
   if (!sequelize) {
-    throw new Error('❌ Sequelize instance not set yet.');
+    throw new Error('Sequelize instance not set yet.');
   }
   return sequelize;
 }

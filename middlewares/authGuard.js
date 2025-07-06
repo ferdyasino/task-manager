@@ -1,19 +1,21 @@
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 
-module.exports = function (req, res, next) {
-  const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
+module.exports = function authGuard(req, res, next) {
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'No token provided. Please log in first.' });
   }
 
+  const token = authHeader.split(' ')[1];
+
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    
-    req.user = decoded;
 
-    console.log('✅ Decoded user:', decoded);
+    req.user = { userId: decoded.userId };
+
+    console.log('✅ Decoded user from token:', req.user);
 
     next();
   } catch (err) {

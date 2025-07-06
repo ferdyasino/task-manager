@@ -32,8 +32,8 @@ function getLocalIP() {
     require('./users/User');
     require('./tasks/Task');
     
-    await sequelize.sync({ alter: true });
-    console.log('✅ Models synced successfully');
+    await sequelize.sync();
+    console.log('Models synced successfully');
     
     app.use('/api', require('./routes/apiRoutes'));
     

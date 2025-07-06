@@ -1,6 +1,5 @@
 const { Sequelize } = require('sequelize');
 
-// Factory function to create Sequelize instance from given config
 const createSequelizeInstance = ({
   host,
   port,
@@ -39,19 +38,19 @@ module.exports = async () => {
   let sequelize = createSequelizeInstance(remoteConfig);
   try {
     await sequelize.authenticate();
-    console.log(`✅ Connected to remote DB at ${remoteConfig.host}`);
+    console.log(`Connected to remote DB at ${remoteConfig.host}`);
     return sequelize;
   } catch (error) {
-    console.warn(`⚠️ Remote DB unreachable: ${error.message}`);
-    console.log(`🔁 Trying local fallback DB at ${localConfig.host}`);
+    console.warn(`Remote DB unreachable: ${error.message}`);
+    console.log(`Trying local fallback DB at ${localConfig.host}`);
 
     sequelize = createSequelizeInstance(localConfig);
     try {
       await sequelize.authenticate();
-      console.log(`✅ Connected to local fallback DB at ${localConfig.host}`);
+      console.log(`Connected to local fallback DB at ${localConfig.host}`);
       return sequelize;
     } catch (err) {
-      console.error('❌ Both remote and local database connections failed:', err.message);
+      console.error('Both remote and local database connections failed:', err.message);
       throw err;
     }
   }

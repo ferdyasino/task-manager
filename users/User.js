@@ -7,6 +7,11 @@ const sequelize = getSequelizeInstance();
 const User = sequelize.define(
   'User',
   {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -59,8 +64,6 @@ const User = sequelize.define(
         },
       },
     },
-
-
     resetToken: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -85,7 +88,6 @@ const User = sequelize.define(
     },
   }
 );
-
 
 User.prototype.isValidPassword = async function (password) {
   return bcrypt.compare(password, this.password);
