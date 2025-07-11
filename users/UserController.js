@@ -1,6 +1,7 @@
 const { User } = require('./User');
 const { Op } = require('sequelize');
 const { normalizeRole } = require('../utils/normalize');
+const { sendPasswordResetEmail } = require('../utils/sendEmail');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
@@ -10,28 +11,30 @@ const JWT_SECRET = process.env.JWT_SECRET;
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ error: 'Valid email is required.' });
+  }
+
   try {
     const user = await User.findOne({ where: { email } });
-    if (!user) {
-      return res.status(400).json({ error: 'User with that email does not exist.' });
+
+    if (user) {
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiry = Date.now() + 60 * 60 * 1000; // 1 hour from now
+
+      user.resetToken = token;
+      user.resetTokenExpiry = expiry;
+      await user.save();
+
+      await sendPasswordResetEmail(email, token);
+      console.log(`🔐 Sent password reset email to ${email}`);
     }
 
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiry = Date.now() + 60 * 60 * 1000;
-
-    user.resetToken = token;
-    user.resetTokenExpiry = expiry;
-    await user.save();
-
-    const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:4137';
-    const resetLink = `${CLIENT_URL}/reset-password/${token}`;
-
-    console.log(`Password reset link for ${email}: ${resetLink}`);
-
-    res.json({ message: 'Password reset link has been sent to your email.' });
+    // Always respond with success (even if email is not found)
+    return res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
   } catch (err) {
     console.error('Forgot Password Error:', err);
-    res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    return res.status(500).json({ error: 'Something went wrong. Please try again later.' });
   }
 };
 
@@ -40,6 +43,10 @@ exports.resetPassword = async (req, res) => {
   const { password } = req.body;
 
   try {
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters." });
+    }
+
     const user = await User.findOne({
       where: {
         resetToken: token,
@@ -48,7 +55,7 @@ exports.resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ error: 'Invalid or expired token' });
+      return res.status(400).json({ error: "Invalid or expired token." });
     }
 
     user.password = password;
@@ -57,14 +64,12 @@ exports.resetPassword = async (req, res) => {
 
     await user.save();
 
-    return res.json({ message: 'Password reset successful. Please log in.' });
+    return res.json({ message: "✅ Password reset successful. Please log in." });
   } catch (err) {
-    console.error('Reset Password Error:', err);
-    res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    console.error("🔴 Reset Password Error:", err);
+    return res.status(500).json({ error: "Something went wrong. Please try again later." });
   }
 };
-
-
 
 exports.getAllUsers = async (req, res) => {
   try {
