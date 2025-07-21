@@ -16,6 +16,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something broke!' });
 });
 
+
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
   for (const iface of Object.values(interfaces).flat()) {
@@ -28,6 +29,7 @@ function getLocalIP() {
   try {
     const sequelize = await initSequelize();
     setSequelizeInstance(sequelize);
+
     
     require('./users/User');
     require('./tasks/Task');
@@ -36,6 +38,11 @@ function getLocalIP() {
     console.log('Models synced successfully');
     
     app.use('/api', require('./routes/apiRoutes'));
+
+    app.use((req, res) => {
+      res.status(404).json({ error: `❌ Route not found: ${req.originalUrl}` });
+    });
+
     
     const ip = getLocalIP();
     app.listen(PORT, () => {

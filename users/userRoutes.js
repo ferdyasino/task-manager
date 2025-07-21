@@ -11,6 +11,7 @@ router.post('/reset-password/:token', controller.resetPassword);
 
 // Protected routes
 router.use(authGuard);
+router.get('/profile', controller.getUserProfile);
 router.get('/', controller.getAllUsers);
 router.post('/', controller.createUser);
 router.put('/:id', controller.updateUser);

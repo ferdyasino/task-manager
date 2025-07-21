@@ -71,6 +71,30 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+exports.getUserProfile = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: No user ID found in token' });
+    }
+
+    const user = await User.findByPk(userId, {
+      attributes: ['id', 'name', 'email', 'birthDate', 'role', 'createdAt']
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ error: 'Internal server error while fetching profile' });
+  }
+};
+
+
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.findAll({
