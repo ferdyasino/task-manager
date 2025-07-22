@@ -71,7 +71,10 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-exports.getUserProfile = async (req, res) => {
+exports.getUserProfile = async (req, res) => {normalizeRole('Administrator'); // returns 'admin'
+normalizeRole('Administrator', { preserveOriginal: true }); // returns 'administrator'
+normalizeStatus('Completed'); // returns 'done'
+normalizeStatus('in progress'); // returns 'in-progress'
   try {
     const userId = req.user?.userId;
 
@@ -95,6 +98,7 @@ exports.getUserProfile = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.findAll();
+    console.log('Fetching all users', users);
     const safeUsers = users.map((u) => u.toSafeJSON());
     res.json(safeUsers);
   } catch (err) {
@@ -103,30 +107,30 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-exports.createUser = async (req, res) => {
-  try {
-    const { name, birthDate, role, password } = req.body;
+// exports.createUser = async (req, res) => {
+//   try {
+//     const { name, birthDate, role, password } = req.body;
 
-    const user = await User.create({
-      name,
-      birthDate,
-      role: normalizeRole(role),
-      password,
-    });
+//     const user = await User.create({
+//       name,
+//       birthDate,
+//       role: normalizeRole(role),
+//       password,
+//     });
 
-    res.status(201).json(user.toSafeJSON());
-  } catch (err) {
-    if (
-      err.name === 'SequelizeValidationError' ||
-      err.name === 'SequelizeUniqueConstraintError'
-    ) {
-      const errors = err.errors.map((e) => e.message);
-      return res.status(400).json({ errors });
-    }
-    console.error('Error creating user:', err);
-    res.status(500).json({ error: 'Failed to create user' });
-  }
-};
+//     res.status(201).json(user.toSafeJSON());
+//   } catch (err) {
+//     if (
+//       err.name === 'SequelizeValidationError' ||
+//       err.name === 'SequelizeUniqueConstraintError'
+//     ) {
+//       const errors = err.errors.map((e) => e.message);
+//       return res.status(400).json({ errors });
+//     }
+//     console.error('Error creating user:', err);
+//     res.status(500).json({ error: 'Failed to create user' });
+//   }
+// };
 
 exports.register = async (req, res) => {
   try {
@@ -192,13 +196,21 @@ exports.updateUser = async (req, res) => {
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    await user.update({
-      name,
-      birthDate,
-      role: normalizeRole(role),
-      ...(password && { password }),
-    });
+    // If password is provided, hash it first
+    if (password) {
+      if (password.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+      }
+      const hashed = await bcrypt.hash(password, 10);
+      user.password = hashed;
+    }
 
+    // Update remaining fields
+    user.name = name;
+    user.birthDate = birthDate;
+    user.role = normalizeRole(role);
+
+    await user.save();
     res.json(user.toSafeJSON());
   } catch (err) {
     if (
@@ -212,6 +224,7 @@ exports.updateUser = async (req, res) => {
     res.status(500).json({ error: 'Failed to update user' });
   }
 };
+
 
 exports.deleteUser = async (req, res) => {
   try {
