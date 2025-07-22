@@ -86,11 +86,24 @@ const User = sequelize.define(
         }
       },
     },
+    defaultScope: {
+      attributes: { exclude: ['password', 'resetToken', 'resetTokenExpiry'] },
+    },
+    scopes: {
+      withSensitive: {
+        attributes: {},
+      },
+    },
   }
 );
 
 User.prototype.isValidPassword = async function (password) {
   return bcrypt.compare(password, this.password);
+};
+
+User.prototype.toSafeJSON = function () {
+  const { password, resetToken, resetTokenExpiry, ...safeData } = this.get({ plain: true });
+  return safeData;
 };
 
 module.exports = { User };

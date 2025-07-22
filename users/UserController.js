@@ -20,7 +20,7 @@ exports.forgotPassword = async (req, res) => {
 
     if (user) {
       const token = crypto.randomBytes(32).toString('hex');
-      const expiry = Date.now() + 60 * 60 * 1000; // 1 hour from now
+      const expiry = Date.now() + 60 * 60 * 1000;
 
       user.resetToken = token;
       user.resetTokenExpiry = expiry;
@@ -30,8 +30,9 @@ exports.forgotPassword = async (req, res) => {
       console.log(`🔐 Sent password reset email to ${email}`);
     }
 
-    // Always respond with success (even if email is not found)
-    return res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
+    return res.json({
+      message: 'If an account with that email exists, a reset link has been sent.',
+    });
   } catch (err) {
     console.error('Forgot Password Error:', err);
     return res.status(500).json({ error: 'Something went wrong. Please try again later.' });
@@ -44,7 +45,7 @@ exports.resetPassword = async (req, res) => {
 
   try {
     if (!password || password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters." });
+      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
     }
 
     const user = await User.findOne({
@@ -55,19 +56,18 @@ exports.resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ error: "Invalid or expired token." });
+      return res.status(400).json({ error: 'Invalid or expired token.' });
     }
 
     user.password = password;
     user.resetToken = null;
     user.resetTokenExpiry = null;
-
     await user.save();
 
-    return res.json({ message: "✅ Password reset successful. Please log in." });
+    return res.json({ message: '✅ Password reset successful. Please log in.' });
   } catch (err) {
-    console.error("🔴 Reset Password Error:", err);
-    return res.status(500).json({ error: "Something went wrong. Please try again later." });
+    console.error('🔴 Reset Password Error:', err);
+    return res.status(500).json({ error: 'Something went wrong. Please try again later.' });
   }
 };
 
@@ -79,28 +79,24 @@ exports.getUserProfile = async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized: No user ID found in token' });
     }
 
-    const user = await User.findByPk(userId, {
-      attributes: ['id', 'name', 'email', 'birthDate', 'role', 'createdAt']
-    });
+    const user = await User.findByPk(userId);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(user);
+    res.json(user.toSafeJSON());
   } catch (error) {
     console.error('Error fetching profile:', error);
     res.status(500).json({ error: 'Internal server error while fetching profile' });
   }
 };
 
-
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.findAll({
-      attributes: { exclude: ['password'] }
-    });
-    res.json(users);
+    const users = await User.findAll();
+    const safeUsers = users.map((u) => u.toSafeJSON());
+    res.json(safeUsers);
   } catch (err) {
     console.error('Error fetching users:', err);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -118,11 +114,13 @@ exports.createUser = async (req, res) => {
       password,
     });
 
-    const { id, name: createdName, role: createdRole } = user;
-    res.status(201).json({ id, name: createdName, role: createdRole });
+    res.status(201).json(user.toSafeJSON());
   } catch (err) {
-    if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
-      const errors = err.errors.map(e => e.message);
+    if (
+      err.name === 'SequelizeValidationError' ||
+      err.name === 'SequelizeUniqueConstraintError'
+    ) {
+      const errors = err.errors.map((e) => e.message);
       return res.status(400).json({ errors });
     }
     console.error('Error creating user:', err);
@@ -147,16 +145,12 @@ exports.register = async (req, res) => {
       role: normalizeRole(role),
     });
 
-    const token = jwt.sign(
-      { id: user.id },  
-      JWT_SECRET,               
-      { expiresIn: '1h' }      
-    );
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
 
-   return res.status(201).json({
+    return res.status(201).json({
       message: 'User registered successfully',
-      userId: user.id,
-      token,           
+      token,
+      user: user.toSafeJSON(),
     });
   } catch (error) {
     console.error('Error registering user:', error);
@@ -164,32 +158,26 @@ exports.register = async (req, res) => {
   }
 };
 
-exports. login = async (req, res) => {
+exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ where: { email } });
+    const user = await User.scope('withSensitive').findOne({ where: { email } });
     if (!user) {
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
-    console.log(user);
+    const valid = await user.isValidPassword(password);
+    if (!valid) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(400).json({ error: 'Invalid email or password' });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
 
-    const token = jwt.sign(
-      { userId: user.id },  
-      JWT_SECRET,               
-      { expiresIn: '1h' }      
-    );
-
-    // localStorage.setItem('token',token);
-
-    res.json({ 
-      message: 'Login successful', 
-      token,              
-      userId: user.id    
+    res.json({
+      message: 'Login successful',
+      token,
+      user: user.toSafeJSON(),
     });
   } catch (error) {
     console.error('Error during login:', error);
@@ -208,14 +196,16 @@ exports.updateUser = async (req, res) => {
       name,
       birthDate,
       role: normalizeRole(role),
-      ...(password && { password })
+      ...(password && { password }),
     });
 
-    const { id, name: updatedName, role: updatedRole } = user;
-    res.json({ id, name: updatedName, role: updatedRole });
+    res.json(user.toSafeJSON());
   } catch (err) {
-    if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
-      const errors = err.errors.map(e => e.message);
+    if (
+      err.name === 'SequelizeValidationError' ||
+      err.name === 'SequelizeUniqueConstraintError'
+    ) {
+      const errors = err.errors.map((e) => e.message);
       return res.status(400).json({ errors });
     }
     console.error('Error updating user:', err);
