@@ -212,7 +212,14 @@ exports.updateUser = async (req, res) => {
 // ❌ DELETE USER
 exports.deleteUser = async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id);
+    const userIdToDelete = req.params.id;
+    const currentUserId = req.user?.userId;
+
+    if (userIdToDelete === String(currentUserId)) {
+      return res.status(403).json({ error: "You cannot delete your own account." });
+    }
+
+    const user = await User.findByPk(userIdToDelete);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     await user.destroy();
@@ -222,3 +229,4 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ error: 'Failed to delete user' });
   }
 };
+
