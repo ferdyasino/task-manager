@@ -8,6 +8,7 @@ const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+// 🔐 FORGOT PASSWORD
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -39,6 +40,7 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
+// 🔄 RESET PASSWORD
 exports.resetPassword = async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
@@ -59,22 +61,20 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired token.' });
     }
 
-    user.password = password;
+    user.password = await bcrypt.hash(password, 10);
     user.resetToken = null;
     user.resetTokenExpiry = null;
     await user.save();
 
     return res.json({ message: '✅ Password reset successful. Please log in.' });
   } catch (err) {
-    console.error('🔴 Reset Password Error:', err);
+    console.error('Reset Password Error:', err);
     return res.status(500).json({ error: 'Something went wrong. Please try again later.' });
   }
 };
 
-exports.getUserProfile = async (req, res) => {normalizeRole('Administrator'); // returns 'admin'
-normalizeRole('Administrator', { preserveOriginal: true }); // returns 'administrator'
-normalizeStatus('Completed'); // returns 'done'
-normalizeStatus('in progress'); // returns 'in-progress'
+// 👤 GET USER PROFILE
+exports.getUserProfile = async (req, res) => {
   try {
     const userId = req.user?.userId;
 
@@ -95,10 +95,10 @@ normalizeStatus('in progress'); // returns 'in-progress'
   }
 };
 
+// 👥 GET ALL USERS
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.findAll();
-    console.log('Fetching all users', users);
     const safeUsers = users.map((u) => u.toSafeJSON());
     res.json(safeUsers);
   } catch (err) {
@@ -107,31 +107,7 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// exports.createUser = async (req, res) => {
-//   try {
-//     const { name, birthDate, role, password } = req.body;
-
-//     const user = await User.create({
-//       name,
-//       birthDate,
-//       role: normalizeRole(role),
-//       password,
-//     });
-
-//     res.status(201).json(user.toSafeJSON());
-//   } catch (err) {
-//     if (
-//       err.name === 'SequelizeValidationError' ||
-//       err.name === 'SequelizeUniqueConstraintError'
-//     ) {
-//       const errors = err.errors.map((e) => e.message);
-//       return res.status(400).json({ errors });
-//     }
-//     console.error('Error creating user:', err);
-//     res.status(500).json({ error: 'Failed to create user' });
-//   }
-// };
-
+// 📝 REGISTER
 exports.register = async (req, res) => {
   try {
     const { name, email, password, birthDate, role } = req.body;
@@ -141,15 +117,21 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await User.create({
       name,
       email,
-      password,
+      password: hashedPassword,
       birthDate,
       role: normalizeRole(role),
     });
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
     return res.status(201).json({
       message: 'User registered successfully',
@@ -162,6 +144,7 @@ exports.register = async (req, res) => {
   }
 };
 
+// 🔑 LOGIN
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -176,7 +159,11 @@ exports.login = async (req, res) => {
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
     res.json({
       message: 'Login successful',
@@ -189,23 +176,20 @@ exports.login = async (req, res) => {
   }
 };
 
+// ✏️ UPDATE USER
 exports.updateUser = async (req, res) => {
   try {
     const { name, birthDate, role, password } = req.body;
-
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    // If password is provided, hash it first
     if (password) {
       if (password.length < 6) {
         return res.status(400).json({ error: 'Password must be at least 6 characters.' });
       }
-      const hashed = await bcrypt.hash(password, 10);
-      user.password = hashed;
+      user.password = await bcrypt.hash(password, 10);
     }
 
-    // Update remaining fields
     user.name = name;
     user.birthDate = birthDate;
     user.role = normalizeRole(role);
@@ -225,7 +209,7 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-
+// ❌ DELETE USER
 exports.deleteUser = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);

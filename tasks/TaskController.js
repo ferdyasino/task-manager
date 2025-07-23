@@ -2,20 +2,24 @@ const { UniqueConstraintError, ValidationError } = require('sequelize');
 const Task = require('./Task');
 const { normalizeStatus } = require('../utils/normalize');
 
-// ✅ GET all tasks for the logged-in user
+// ✅ GET all tasks (admin sees all, user sees their own)
 exports.getAllTasks = async (req, res) => {
   try {
     if (!req.user || !req.user.userId) {
       return res.status(401).json({ error: 'Unauthorized: Missing user info' });
     }
 
+    const whereClause = req.user.role === 'admin'
+      ? {}
+      : { userId: req.user.userId };
+
     const tasks = await Task.findAll({
-      where: { userId: req.user.userId },
-      order: [['createdAt', 'DESC']]
+      where: whereClause,
+      order: [['createdAt', 'DESC']],
     });
 
     if (!tasks.length) {
-      return res.status(404).json({ message: 'No tasks found for this user' });
+      return res.status(404).json({ message: 'No tasks found' });
     }
 
     res.json(tasks);
@@ -25,7 +29,7 @@ exports.getAllTasks = async (req, res) => {
   }
 };
 
-// ✅ POST create a new task for the logged-in user
+// ✅ POST create a new task
 exports.createTask = async (req, res) => {
   try {
     const { title, description, status, dueDate } = req.body;
@@ -59,7 +63,7 @@ exports.createTask = async (req, res) => {
   }
 };
 
-// ✅ PUT update a task belonging to the logged-in user
+// ✅ PUT update task (admin can update all, user can update their own only)
 exports.updateTask = async (req, res) => {
   try {
     const { description, status, dueDate } = req.body;
@@ -69,7 +73,10 @@ exports.updateTask = async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    if (task.userId !== req.user.userId) {
+    const isOwner = task.userId === req.user.userId;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: 'Forbidden: You can only update your own tasks' });
     }
 
@@ -89,7 +96,7 @@ exports.updateTask = async (req, res) => {
   }
 };
 
-// ✅ DELETE a task owned by the logged-in user
+// ✅ DELETE task (admin can delete all, user can delete their own only)
 exports.deleteTask = async (req, res) => {
   try {
     const task = await Task.findByPk(req.params.id);
@@ -98,7 +105,10 @@ exports.deleteTask = async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    if (task.userId !== req.user.userId) {
+    const isOwner = task.userId === req.user.userId;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: 'Forbidden: You can only delete your own tasks' });
     }
 
