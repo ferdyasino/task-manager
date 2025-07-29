@@ -73,7 +73,6 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// 👤 GET USER PROFILE
 exports.getUserProfile = async (req, res) => {
   try {
     const userId = req.user?.userId;
@@ -95,7 +94,6 @@ exports.getUserProfile = async (req, res) => {
   }
 };
 
-// 👥 GET ALL USERS
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.findAll();
@@ -107,7 +105,6 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// 📝 REGISTER
 exports.register = async (req, res) => {
   try {
     const { name, email, password, birthDate, role } = req.body;
@@ -144,7 +141,6 @@ exports.register = async (req, res) => {
   }
 };
 
-// 🔑 LOGIN
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -176,12 +172,18 @@ exports.login = async (req, res) => {
   }
 };
 
-// ✏️ UPDATE USER
 exports.updateUser = async (req, res) => {
   try {
     const { name, birthDate, role, password } = req.body;
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const currentUserId = req.user?.userId;
+
+    // 🔒 Prevent self-role changes
+    if (String(user.id) === String(currentUserId) && role && role !== user.role) {
+      return res.status(403).json({ error: 'You cannot change your own role.' });
+    }
 
     if (password) {
       if (password.length < 6) {
@@ -192,7 +194,11 @@ exports.updateUser = async (req, res) => {
 
     user.name = name;
     user.birthDate = birthDate;
-    user.role = normalizeRole(role);
+
+    // Only change role if allowed
+    if (String(user.id) !== String(currentUserId)) {
+      user.role = normalizeRole(role);
+    }
 
     await user.save();
     res.json(user.toSafeJSON());
@@ -209,7 +215,6 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// ❌ DELETE USER
 exports.deleteUser = async (req, res) => {
   try {
     const userIdToDelete = req.params.id;
