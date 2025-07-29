@@ -1,11 +1,10 @@
-const { UniqueConstraintError, ValidationError } = require('sequelize');
+const { UniqueConstraintError, ValidationError, Op } = require('sequelize');
 const Task = require('./Task');
 const { normalizeStatus } = require('../utils/normalize');
 
-// ✅ GET all tasks (admin sees all, user sees their own)
 exports.getAllTasks = async (req, res) => {
   try {
-    if (!req.user || !req.user.userId) {
+    if (!req.user?.userId) {
       return res.status(401).json({ error: 'Unauthorized: Missing user info' });
     }
 
@@ -29,12 +28,11 @@ exports.getAllTasks = async (req, res) => {
   }
 };
 
-// ✅ POST create a new task
 exports.createTask = async (req, res) => {
   try {
     const { title, description, status, dueDate } = req.body;
 
-    if (!title || !title.trim()) {
+    if (!title?.trim()) {
       return res.status(400).json({ error: 'Title is required' });
     }
 
@@ -46,7 +44,7 @@ exports.createTask = async (req, res) => {
       title: title.trim(),
       description: description?.trim() || '',
       status: normalizeStatus(status),
-      dueDate,
+      dueDate: new Date(dueDate),
       userId: req.user.userId,
     });
 
@@ -63,10 +61,9 @@ exports.createTask = async (req, res) => {
   }
 };
 
-// ✅ PUT update task (admin can update all, user can update their own only)
 exports.updateTask = async (req, res) => {
   try {
-    const { description, status, dueDate } = req.body;
+    const { title, description, status, dueDate } = req.body;
     const task = await Task.findByPk(req.params.id);
 
     if (!task) {
@@ -80,23 +77,42 @@ exports.updateTask = async (req, res) => {
       return res.status(403).json({ error: 'Forbidden: You can only update your own tasks' });
     }
 
+    // Check duplicate title
+    if (title && title.trim().toLowerCase() !== task.title.toLowerCase()) {
+      const duplicate = await Task.findOne({
+        where: {
+          title: title.trim(),
+          userId: req.user.userId,
+          id: { [Op.ne]: task.id },
+        },
+      });
+      if (duplicate) {
+        return res.status(400).json({ error: 'Task title already exists' });
+      }
+    }
+
+    // Validate date format (but allow any date)
+    if (dueDate && isNaN(Date.parse(dueDate))) {
+      return res.status(400).json({ error: 'Valid due date is required' });
+    }
+
     await task.update({
-      description: description?.trim() || '',
-      status: normalizeStatus(status),
-      dueDate,
+      title: title ? title.trim() : task.title,
+      description: description?.trim() ?? task.description,
+      status: normalizeStatus(status) || task.status,
+      dueDate: dueDate || task.dueDate,
     });
 
     res.json({ message: 'Task updated successfully', task });
   } catch (err) {
     if (err instanceof ValidationError) {
-      return res.status(400).json({ error: err.errors[0].message });
+      return res.status(400).json({ error: err.errors[0]?.message });
     }
     console.error('Error updating task:', err);
     res.status(500).json({ error: 'Failed to update task' });
   }
 };
 
-// ✅ DELETE task (admin can delete all, user can delete their own only)
 exports.deleteTask = async (req, res) => {
   try {
     const task = await Task.findByPk(req.params.id);
