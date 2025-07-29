@@ -40,11 +40,19 @@ exports.createTask = async (req, res) => {
       return res.status(400).json({ error: 'Valid due date is required' });
     }
 
+    // Past due date check (block on creation)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(dueDate);
+    if (selectedDate < today) {
+      return res.status(400).json({ error: 'Due date cannot be in the past' });
+    }
+
     const task = await Task.create({
       title: title.trim(),
       description: description?.trim() || '',
       status: normalizeStatus(status),
-      dueDate: new Date(dueDate),
+      dueDate: selectedDate,
       userId: req.user.userId,
     });
 
@@ -77,7 +85,7 @@ exports.updateTask = async (req, res) => {
       return res.status(403).json({ error: 'Forbidden: You can only update your own tasks' });
     }
 
-    // Check duplicate title
+    // Duplicate title check
     if (title && title.trim().toLowerCase() !== task.title.toLowerCase()) {
       const duplicate = await Task.findOne({
         where: {
@@ -91,9 +99,21 @@ exports.updateTask = async (req, res) => {
       }
     }
 
-    // Validate date format (but allow any date)
-    if (dueDate && isNaN(Date.parse(dueDate))) {
-      return res.status(400).json({ error: 'Valid due date is required' });
+    // Due date validation
+    if (dueDate) {
+      if (isNaN(Date.parse(dueDate))) {
+        return res.status(400).json({ error: 'Valid due date is required' });
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(dueDate);
+
+      // Only check if the date is changed
+      const originalDateStr = task.dueDate?.toISOString().split('T')[0];
+      if (dueDate !== originalDateStr && selectedDate < today) {
+        return res.status(400).json({ error: 'Due date cannot be set to a past date' });
+      }
     }
 
     await task.update({
