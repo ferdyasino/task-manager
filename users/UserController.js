@@ -8,7 +8,6 @@ const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// 🔐 FORGOT PASSWORD
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -28,7 +27,7 @@ exports.forgotPassword = async (req, res) => {
       await user.save();
 
       await sendPasswordResetEmail(email, token);
-      console.log(`🔐 Sent password reset email to ${email}`);
+      console.log(`Sent password reset email to ${email}`);
     }
 
     return res.json({
@@ -40,7 +39,6 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// 🔄 RESET PASSWORD
 exports.resetPassword = async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
@@ -66,7 +64,7 @@ exports.resetPassword = async (req, res) => {
     user.resetTokenExpiry = null;
     await user.save();
 
-    return res.json({ message: '✅ Password reset successful. Please log in.' });
+    return res.json({ message: 'Password reset successful. Please log in.' });
   } catch (err) {
     console.error('Reset Password Error:', err);
     return res.status(500).json({ error: 'Something went wrong. Please try again later.' });
@@ -114,12 +112,10 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = await User.create({
       name,
       email,
-      password: hashedPassword,
+      password,
       birthDate,
       role: normalizeRole(role),
     });
