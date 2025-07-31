@@ -1,4 +1,4 @@
-const { User } = require('./User');
+const User = require('./User');
 const { Op } = require('sequelize');
 const { normalizeRole } = require('../utils/normalize');
 const { sendPasswordResetEmail } = require('../utils/sendEmail');

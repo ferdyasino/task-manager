@@ -1,6 +1,26 @@
 const { UniqueConstraintError, ValidationError, Op } = require('sequelize');
 const Task = require('./Task');
+const TaskFile = require('../taskFiles/TaskFile');
 const { normalizeStatus } = require('../utils/normalize');
+const fs = require('fs');
+const path = require('path');
+
+const UPLOADS_DIR = path.join(__dirname, '../../uploads');
+
+// 🔹 Helper to delete file from disk
+function deleteFileFromDisk(fileUrl) {
+  try {
+    const fileName = path.basename(fileUrl);
+    const filePath = path.join(UPLOADS_DIR, fileName);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`Deleted file: ${filePath}`);
+    }
+  } catch (err) {
+    console.warn(`Could not delete file from disk: ${fileUrl}`, err.message);
+  }
+}
 
 exports.getAllTasks = async (req, res) => {
   try {
@@ -14,12 +34,12 @@ exports.getAllTasks = async (req, res) => {
 
     const tasks = await Task.findAll({
       where: whereClause,
+      include: [{
+        model: TaskFile,
+        attributes: ['id', 'filename', 'filetype', 'filesize', 'fileurl']
+      }],
       order: [['createdAt', 'DESC']],
     });
-
-    if (!tasks.length) {
-      return res.status(404).json({ message: 'No tasks found' });
-    }
 
     res.json(tasks);
   } catch (err) {
@@ -40,10 +60,10 @@ exports.createTask = async (req, res) => {
       return res.status(400).json({ error: 'Valid due date is required' });
     }
 
-    // Past due date check (block on creation)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const selectedDate = new Date(dueDate);
+
     if (selectedDate < today) {
       return res.status(400).json({ error: 'Due date cannot be in the past' });
     }
@@ -56,7 +76,21 @@ exports.createTask = async (req, res) => {
       userId: req.user.userId,
     });
 
-    return res.status(201).json({ message: 'Task created successfully', task });
+    if (req.file) {
+      await TaskFile.create({
+        taskId: task.id,
+        filename: req.file.originalname,
+        filetype: req.file.mimetype,
+        filesize: req.file.size,
+        fileurl: `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+      });
+    }
+
+    const newTask = await Task.findByPk(task.id, {
+      include: [{ model: TaskFile }]
+    });
+
+    return res.status(201).json({ message: 'Task created successfully', task: newTask });
   } catch (err) {
     if (err instanceof UniqueConstraintError) {
       return res.status(400).json({ error: 'Task title already exists' });
@@ -80,12 +114,10 @@ exports.updateTask = async (req, res) => {
 
     const isOwner = task.userId === req.user.userId;
     const isAdmin = req.user.role === 'admin';
-
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: 'Forbidden: You can only update your own tasks' });
     }
 
-    // Duplicate title check
     if (title && title.trim().toLowerCase() !== task.title.toLowerCase()) {
       const duplicate = await Task.findOne({
         where: {
@@ -99,17 +131,13 @@ exports.updateTask = async (req, res) => {
       }
     }
 
-    // Due date validation
     if (dueDate) {
       if (isNaN(Date.parse(dueDate))) {
         return res.status(400).json({ error: 'Valid due date is required' });
       }
-
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const selectedDate = new Date(dueDate);
-
-      // Only check if the date is changed
       const originalDateStr = task.dueDate?.toISOString().split('T')[0];
       if (dueDate !== originalDateStr && selectedDate < today) {
         return res.status(400).json({ error: 'Due date cannot be set to a past date' });
@@ -123,7 +151,21 @@ exports.updateTask = async (req, res) => {
       dueDate: dueDate || task.dueDate,
     });
 
-    res.json({ message: 'Task updated successfully', task });
+    if (req.file) {
+      await TaskFile.create({
+        taskId: task.id,
+        filename: req.file.originalname,
+        filetype: req.file.mimetype,
+        filesize: req.file.size,
+        fileurl: `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+      });
+    }
+
+    const updatedTask = await Task.findByPk(task.id, {
+      include: [{ model: TaskFile }]
+    });
+
+    res.json({ message: 'Task updated successfully', task: updatedTask });
   } catch (err) {
     if (err instanceof ValidationError) {
       return res.status(400).json({ error: err.errors[0]?.message });
@@ -135,7 +177,9 @@ exports.updateTask = async (req, res) => {
 
 exports.deleteTask = async (req, res) => {
   try {
-    const task = await Task.findByPk(req.params.id);
+    const task = await Task.findByPk(req.params.id, {
+      include: [{ model: TaskFile }]
+    });
 
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
@@ -143,15 +187,49 @@ exports.deleteTask = async (req, res) => {
 
     const isOwner = task.userId === req.user.userId;
     const isAdmin = req.user.role === 'admin';
-
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: 'Forbidden: You can only delete your own tasks' });
     }
 
+    if (task.TaskFiles?.length) {
+      await Promise.all(task.TaskFiles.map(async (file) => {
+        deleteFileFromDisk(file.fileurl);
+        await file.destroy();
+      }));
+    }
+
     await task.destroy();
-    res.json({ message: 'Task deleted successfully' });
+    res.json({ message: 'Task and associated files deleted successfully' });
   } catch (err) {
     console.error('Error deleting task:', err);
     res.status(500).json({ error: 'Failed to delete task' });
+  }
+};
+
+exports.deleteTaskFile = async (req, res) => {
+  try {
+    const { taskId, fileId } = req.params;
+    const task = await Task.findByPk(taskId, {
+      include: [{ model: TaskFile }]
+    });
+
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+
+    const isOwner = task.userId === req.user.userId;
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'Forbidden: You can only delete your own files' });
+    }
+
+    const file = task.TaskFiles.find(f => f.id == fileId);
+    if (!file) return res.status(404).json({ error: 'File not found' });
+
+    deleteFileFromDisk(file.fileurl);
+    await file.destroy();
+
+    res.json({ message: 'File deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting task file:', err);
+    res.status(500).json({ error: 'Failed to delete file' });
   }
 };

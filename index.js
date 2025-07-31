@@ -1,57 +1,49 @@
 require('dotenv').config();
-
 const express = require('express');
 const cors = require('cors');
-const os = require('os');
+
 const initSequelize = require('./config/database');
 const { setSequelizeInstance } = require('./config/sequelizeInstance');
+
 const app = express();
 const PORT = process.env.PORT || 4000;
 
 app.use(express.json());
 app.use(cors());
 
-app.use((err, req, res, next) => {
-  console.error('Unexpected error:', err.stack);
-  res.status(500).json({ error: 'Something broke!' });
-});
 
-
-function getLocalIP() {
-  const interfaces = os.networkInterfaces();
-  for (const iface of Object.values(interfaces).flat()) {
-    if (iface.family === 'IPv4' && !iface.internal) return iface.address;
-  }
-  return 'localhost';
-}
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 (async () => {
   try {
     const sequelize = await initSequelize();
     setSequelizeInstance(sequelize);
 
-    
-    require('./users/User');
-    require('./tasks/Task');
-    
+    // Import models
+    const User = require('./users/User');
+    const Task = require('./tasks/Task');
+    const TaskFile = require('./taskFiles/TaskFile');
+
+    // Define associations here
+    User.hasMany(Task, { foreignKey: 'userId', onDelete: 'CASCADE' });
+    Task.belongsTo(User, { foreignKey: 'userId' });
+
+    Task.hasMany(TaskFile, { foreignKey: 'taskId', onDelete: 'CASCADE' });
+    TaskFile.belongsTo(Task, { foreignKey: 'taskId' });
+
+    // Sync DB
     await sequelize.sync();
-    console.log('Models synced successfully');
-    
+    console.log('✅ Models synced successfully');
+
+    // Routes
     app.use('/api', require('./routes/apiRoutes'));
 
-    app.use((req, res) => {
-      res.status(404).json({ error: `❌ Route not found: ${req.originalUrl}` });
-    });
-
-    
-    const ip = getLocalIP();
     app.listen(PORT, () => {
-      console.log('Server running at:');
-      console.log(`http://localhost:${PORT}`);
-      console.log(`http://${ip}:${PORT} for LAN devices`);
+      console.log(`🚀 Server running at http://localhost:${PORT}`);
     });
   } catch (err) {
-    console.error('App initialization failed:', err.message);
+    console.error('❌ App initialization failed:', err.message);
     process.exit(1);
   }
 })();

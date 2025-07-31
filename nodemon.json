@@ -1,4 +1,4 @@
 {
-  "watch": ["index.js", "config", "routes", "users", "tasks", "auth", "utils","middlewares","seeds"],
+  "watch": ["index.js", "config", "routes", "users", "tasks", "auth", "utils","middlewares","seeds","taskFiles","uploads"],
   "ignore": ["task_app", "assets", "build", "pubspec.yaml", "pubspec.lock", "flutter_native_splash.yaml"]
 }
