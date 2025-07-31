@@ -1,78 +1,138 @@
-const { UniqueConstraintError, ValidationError } = require('sequelize');
-const Task = require('./TaskModel');
+const { UniqueConstraintError, ValidationError, Op } = require('sequelize');
+const Task = require('./Task');
 const { normalizeStatus } = require('../utils/normalize');
 
-// GET all tasks
 exports.getAllTasks = async (req, res) => {
   try {
-    const tasks = await Task.findAll();
+    if (!req.user?.userId) {
+      return res.status(401).json({ error: 'Unauthorized: Missing user info' });
+    }
+
+    const whereClause = req.user.role === 'admin'
+      ? {}
+      : { userId: req.user.userId };
+
+    const tasks = await Task.findAll({
+      where: whereClause,
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (!tasks.length) {
+      return res.status(404).json({ message: 'No tasks found' });
+    }
+
     res.json(tasks);
   } catch (err) {
-    console.error('❌ Fetch error:', err);
+    console.error('Error fetching tasks:', err);
     res.status(500).json({ error: 'Failed to fetch tasks' });
   }
 };
 
-// POST create a new task
 exports.createTask = async (req, res) => {
   try {
     const { title, description, status, dueDate } = req.body;
-    if (!title || !title.trim()) {
+
+    if (!title?.trim()) {
       return res.status(400).json({ error: 'Title is required' });
     }
 
-    const normalizedStatus = normalizeStatus(status);
+    if (!dueDate || isNaN(Date.parse(dueDate))) {
+      return res.status(400).json({ error: 'Valid due date is required' });
+    }
+
+    // Past due date check (block on creation)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(dueDate);
+    if (selectedDate < today) {
+      return res.status(400).json({ error: 'Due date cannot be in the past' });
+    }
 
     const task = await Task.create({
       title: title.trim(),
-      description,
-      status: normalizedStatus,
-      dueDate,
+      description: description?.trim() || '',
+      status: normalizeStatus(status),
+      dueDate: selectedDate,
+      userId: req.user.userId,
     });
 
-    res.status(201).json(task);
+    return res.status(201).json({ message: 'Task created successfully', task });
   } catch (err) {
     if (err instanceof UniqueConstraintError) {
       return res.status(400).json({ error: 'Task title already exists' });
     }
     if (err instanceof ValidationError) {
-      return res.status(400).json({ error: err.errors[0].message });
+      return res.status(400).json({ error: err.errors[0]?.message || 'Validation error' });
     }
-
-    console.error('❌ Create error:', err);
-    res.status(400).json({ error: 'Failed to create task' });
+    console.error('Error creating task:', err);
+    return res.status(500).json({ error: 'Failed to create task' });
   }
 };
 
-// PUT update task
 exports.updateTask = async (req, res) => {
   try {
-    const { description, status, dueDate } = req.body;
-    const normalizedStatus = normalizeStatus(status);
+    const { title, description, status, dueDate } = req.body;
     const task = await Task.findByPk(req.params.id);
 
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    await task.update({
-      description,
-      status: normalizedStatus,
-      dueDate,
-    });
+    const isOwner = task.userId === req.user.userId;
+    const isAdmin = req.user.role === 'admin';
 
-    res.json(task);
-  } catch (err) {
-    if (err instanceof ValidationError) {
-      return res.status(400).json({ error: err.errors[0].message });
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'Forbidden: You can only update your own tasks' });
     }
 
-    console.error('❌ Update error:', err);
-    res.status(400).json({ error: 'Failed to update task' });
+    // Duplicate title check
+    if (title && title.trim().toLowerCase() !== task.title.toLowerCase()) {
+      const duplicate = await Task.findOne({
+        where: {
+          title: title.trim(),
+          userId: req.user.userId,
+          id: { [Op.ne]: task.id },
+        },
+      });
+      if (duplicate) {
+        return res.status(400).json({ error: 'Task title already exists' });
+      }
+    }
+
+    // Due date validation
+    if (dueDate) {
+      if (isNaN(Date.parse(dueDate))) {
+        return res.status(400).json({ error: 'Valid due date is required' });
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(dueDate);
+
+      // Only check if the date is changed
+      const originalDateStr = task.dueDate?.toISOString().split('T')[0];
+      if (dueDate !== originalDateStr && selectedDate < today) {
+        return res.status(400).json({ error: 'Due date cannot be set to a past date' });
+      }
+    }
+
+    await task.update({
+      title: title ? title.trim() : task.title,
+      description: description?.trim() ?? task.description,
+      status: normalizeStatus(status) || task.status,
+      dueDate: dueDate || task.dueDate,
+    });
+
+    res.json({ message: 'Task updated successfully', task });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({ error: err.errors[0]?.message });
+    }
+    console.error('Error updating task:', err);
+    res.status(500).json({ error: 'Failed to update task' });
   }
 };
 
-// DELETE task
 exports.deleteTask = async (req, res) => {
   try {
     const task = await Task.findByPk(req.params.id);
@@ -81,10 +141,17 @@ exports.deleteTask = async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
+    const isOwner = task.userId === req.user.userId;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'Forbidden: You can only delete your own tasks' });
+    }
+
     await task.destroy();
-    res.json({ message: 'Task deleted' });
+    res.json({ message: 'Task deleted successfully' });
   } catch (err) {
-    console.error('❌ Delete error:', err);
+    console.error('Error deleting task:', err);
     res.status(500).json({ error: 'Failed to delete task' });
   }
 };

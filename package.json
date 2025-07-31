@@ -4,20 +4,21 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --config nodemon.json index.js",
-    "icons": "cd task_app && dart run flutter_launcher_icons",
-    "splash": "cd task_app && dart run flutter_native_splash:create",
-    "flutter-run": "cd task_app && flutter run",
-    "flutter-dev": "npm run icons && npm run splash && concurrently \"npm run dev\" \"npm run flutter-run\""
+    "flutter-run": "cd task_app && flutter pub get && flutter run",
+    "flutter-dev": "concurrently \"npm run dev\" \"npm run flutter-run\""
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.1",
+    "nodemailer": "^7.0.5",
     "sequelize": "^6.37.7"
   },
   "devDependencies": {

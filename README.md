@@ -95,16 +95,6 @@ flutter pub run flutter_launcher_icons
 flutter pub run flutter_native_splash:create
 ```
 
-### 5. Run the project
-
-```bash
-# From project root
-./dev.sh
-# or run separately:
-npm run dev        # backend
-cd task_app && flutter run  # frontend
-```
-
 The API should be running at:
 
 ```

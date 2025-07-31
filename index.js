@@ -1,58 +1,57 @@
 require('dotenv').config();
+
 const express = require('express');
+const cors = require('cors');
 const os = require('os');
-const sequelize = require('./config/database');
-
-// Import models (to ensure associations and table definitions are loaded)
-require('./tasks/TaskModel');
-require('./users/UserModel');
-
-// Import routes
-const apiRoutes = require('./routes/apiRoutes');
-
+const initSequelize = require('./config/database');
+const { setSequelizeInstance } = require('./config/sequelizeInstance');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Middleware to parse JSON
 app.use(express.json());
+app.use(cors());
 
-// Mount API routes
-app.use('/api', apiRoutes);
-
-// 🔥 Basic error-handling middleware
 app.use((err, req, res, next) => {
-  console.error('❌ Unexpected error:', err.stack);
+  console.error('Unexpected error:', err.stack);
   res.status(500).json({ error: 'Something broke!' });
 });
 
-// 🧠 Get local network IP for easier Flutter testing
+
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
   for (const iface of Object.values(interfaces).flat()) {
-    if (iface.family === 'IPv4' && !iface.internal) {
-      return iface.address;
-    }
+    if (iface.family === 'IPv4' && !iface.internal) return iface.address;
   }
   return 'localhost';
 }
 
-// 🚀 Init server
 (async () => {
   try {
-    await sequelize.authenticate();
-    console.log('✅ Database authenticated');
+    const sequelize = await initSequelize();
+    setSequelizeInstance(sequelize);
 
-    await sequelize.sync({ alter: true }); // ⚠️ Use { force: false } or migrations in production
-    console.log('✅ Models synced');
+    
+    require('./users/User');
+    require('./tasks/Task');
+    
+    await sequelize.sync();
+    console.log('Models synced successfully');
+    
+    app.use('/api', require('./routes/apiRoutes'));
 
+    app.use((req, res) => {
+      res.status(404).json({ error: `❌ Route not found: ${req.originalUrl}` });
+    });
+
+    
     const ip = getLocalIP();
     app.listen(PORT, () => {
-      console.log(`🚀 Server running at:`);
-      console.log(`   • http://localhost:${PORT}`);
-      console.log(`   • http://${ip}:${PORT}  ← Use this in Flutter`);
+      console.log('Server running at:');
+      console.log(`http://localhost:${PORT}`);
+      console.log(`http://${ip}:${PORT} for LAN devices`);
     });
   } catch (err) {
-    console.error('❌ App initialization failed:', err);
+    console.error('App initialization failed:', err.message);
     process.exit(1);
   }
 })();

@@ -1,6 +1,8 @@
 const normalizeStatus = (input) => {
   if (!input || typeof input !== 'string') return undefined;
 
+  const key = input.toLowerCase().trim();
+
   const statusMap = {
     'pending': 'pending',
     'in-progress': 'in-progress',
@@ -8,25 +10,32 @@ const normalizeStatus = (input) => {
     'progress': 'in-progress',
     'done': 'done',
     'completed': 'done',
-    'complete': 'done'
+    'complete': 'done',
+    'finished': 'done',
   };
 
-  const key = input.toLowerCase().trim();
   return statusMap[key];
 };
 
-const normalizeRole = (input) => {
+const normalizeRole = (input, options = { preserveOriginal: false }) => {
   if (!input || typeof input !== 'string') return undefined;
 
+  const key = input.toLowerCase().trim();
+
   const roleMap = {
-    'admin': 'administrator',
-    'administrator': 'administrator',
+    'admin': 'admin',
+    'administrator': 'admin',
     'user': 'user',
-    'client': 'user'
+    'client': 'user',
   };
 
-  const key = input.toLowerCase().trim();
-  return roleMap[key];
+  const normalized = roleMap[key];
+
+  if (options.preserveOriginal && ['admin', 'administrator'].includes(key)) {
+    return key; // e.g., preserve 'administrator'
+  }
+
+  return normalized;
 };
 
 module.exports = {

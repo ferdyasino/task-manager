@@ -1,20 +1,57 @@
-// config/database.js
-require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
-const isRemote = process.env.DB_HOST && process.env.DB_USER;
-const config = {
-  host: isRemote ? process.env.DB_HOST : process.env.LOCAL_DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT),
-  dialect: process.env.DB_DIALECT,
-  logging: false
+const createSequelizeInstance = ({
+  host,
+  port,
+  database,
+  username,
+  password,
+  dialect,
+}) => {
+  return new Sequelize(database, username, password, {
+    host,
+    port,
+    dialect,
+    logging: false,
+  });
 };
 
-const sequelize = new Sequelize(
-  isRemote ? process.env.DB_NAME : process.env.LOCAL_DB_NAME,
-  isRemote ? process.env.DB_USER : process.env.LOCAL_DB_USER,
-  isRemote ? process.env.DB_PASS : process.env.LOCAL_DB_PASS,
-  config
-);
+module.exports = async () => {
+  const remoteConfig = {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 3306,
+    database: process.env.DB_NAME,
+    username: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    dialect: process.env.DB_DIALECT || 'mysql',
+  };
 
-module.exports = sequelize;
+  const localConfig = {
+    host: process.env.LOCAL_DB_HOST || 'localhost',
+    port: process.env.LOCAL_DB_PORT || 3306,
+    database: process.env.LOCAL_DB_NAME,
+    username: process.env.LOCAL_DB_USER,
+    password: process.env.LOCAL_DB_PASS,  
+    dialect: process.env.LOCAL_DB_DIALECT || 'mysql',
+  };
+
+  let sequelize = createSequelizeInstance(remoteConfig);
+  try {
+    await sequelize.authenticate();
+    console.log(`Connected to remote DB at ${remoteConfig.host}`);
+    return sequelize;
+  } catch (error) {
+    console.warn(`Remote DB unreachable: ${error.message}`);
+    console.log(`Trying local fallback DB at ${localConfig.host}`);
+
+    sequelize = createSequelizeInstance(localConfig);
+    try {
+      await sequelize.authenticate();
+      console.log(`Connected to local fallback DB at ${localConfig.host}`);
+      return sequelize;
+    } catch (err) {
+      console.error('Both remote and local database connections failed:', err.message);
+      throw err;
+    }
+  }
+};
