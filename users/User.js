@@ -106,4 +106,4 @@ User.prototype.toSafeJSON = function () {
   return safeData;
 };
 
-module.exports = { User };
+module.exports = User;

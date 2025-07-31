@@ -1,4 +1,6 @@
+# ===============================
 # Node.js
+# ===============================
 node_modules/
 .env
 package-lock.json
@@ -9,7 +11,13 @@ coverage/
 logs/
 *.log
 
-# Sequelize & DB
+# Uploads (user-generated files)
+uploads/*
+!uploads/.gitkeep
+
+# ===============================
+# Sequelize & Database
+# ===============================
 *.sqlite
 *.sqlite3
 database.sqlite
@@ -17,7 +25,9 @@ database.sqlite3
 db/
 .dump
 
-# Flutter
+# ===============================
+# Flutter (task_app)
+# ===============================
 task_app/.dart_tool/
 task_app/.idea/
 task_app/.vscode/
@@ -29,13 +39,17 @@ task_app/build/
 task_app/.DS_Store
 task_app/*.iml
 
-# Android
+# ===============================
+# Flutter - Android
+# ===============================
 task_app/android/.gradle/
 task_app/android/.idea/
 task_app/android/local.properties
 task_app/android/app/*.keystore
 
-# iOS
+# ===============================
+# Flutter - iOS
+# ===============================
 task_app/ios/Pods/
 task_app/ios/Runner.xcworkspace/
 task_app/ios/Flutter/Flutter.framework
@@ -45,20 +59,30 @@ task_app/ios/Flutter/ephemeral/
 task_app/ios/Flutter/App.framework
 task_app/ios/.generated/
 
-# Web
+# ===============================
+# Flutter - Web
+# ===============================
 task_app/web/.dart_tool/
 
-# macOS
+# ===============================
+# Flutter - macOS
+# ===============================
 task_app/macos/Flutter/ephemeral/
 task_app/macos/Flutter/GeneratedPluginRegistrant.swift
 
-# Linux
+# ===============================
+# Flutter - Linux
+# ===============================
 task_app/linux/Flutter/ephemeral/
 
-# Windows
+# ===============================
+# Flutter - Windows
+# ===============================
 task_app/windows/Flutter/ephemeral/
 
-# Other
+# ===============================
+# IDE & OS Files
+# ===============================
 *.swp
 .DS_Store
 .idea/
@@ -67,7 +91,9 @@ task_app/windows/Flutter/ephemeral/
 *.lock
 *.bak
 
+# ===============================
 # Firebase / Android builds (optional if used)
+# ===============================
 task_app/firebase.json
 task_app/android/app/google-services.json
 task_app/ios/Runner/GoogleService-Info.plist
